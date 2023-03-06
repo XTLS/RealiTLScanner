@@ -32,8 +32,8 @@ type Scanner struct {
 	timeout        time.Duration
 	numberOfThread int
 	mu             *sync.Mutex
-	high		   net.IP
-	low			   net.IP
+	high           net.IP
+	low	           net.IP
 }
 
 func (s *Scanner) Run() {
