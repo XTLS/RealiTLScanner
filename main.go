@@ -33,33 +33,47 @@ type Scanner struct {
 	numberOfThread int
 	mu             *sync.Mutex
 	high           net.IP
-	low	           net.IP
+	low            net.IP
 }
 
 func (s *Scanner) Run() {
-	conn, err := net.DialTimeout("tcp", s.addr+":"+s.port, s.timeout)
-	if err != nil {
-		fmt.Println("Dial failed: ", err)
+	addr := net.ParseIP(s.addr)
+	if addr == nil {
+		fmt.Println("Invalid address format")
 		return
 	}
-	line := "" + conn.RemoteAddr().String() + " \t----- "
-	s.mu.Lock()
-	s.high = conn.RemoteAddr().(*net.TCPAddr).IP
-	s.low = conn.RemoteAddr().(*net.TCPAddr).IP
-	s.mu.Unlock()
-	conn.SetDeadline(time.Now().Add(s.timeout))
-	c := tls.Client(conn, &tls.Config {
-		InsecureSkipVerify: true,
-		NextProtos: []string{"h2", "http/1.1"},
-	})
-	err = c.Handshake()
-	if err != nil {
-		fmt.Println("", line, "TLS handshake failed: ", err)
-	} else {
-		defer c.Close()
-		state := c.ConnectionState()
-		fmt.Println("", line, "Found TLS v", TlsDic[state.Version], "\tALPN", state.NegotiatedProtocol, "\t", state.PeerCertificates[0].Subject)
+	str := addr.String()
+	if addr.To4() == nil {
+		str = "[" + str + "]"
 	}
+	conn, err := net.DialTimeout("tcp", str+":"+s.port, s.timeout)
+	if err != nil {
+		fmt.Println("Dial failed: ", err)
+	} else {
+		line := "" + conn.RemoteAddr().String() + " \t"
+		conn.SetDeadline(time.Now().Add(s.timeout))
+		c := tls.Client(conn, &tls.Config {
+			InsecureSkipVerify: true,
+			NextProtos: []string{"h2", "http/1.1"},
+		})
+		err = c.Handshake()
+		if err != nil {
+			fmt.Println("", line, "TLS handshake failed: ", err)
+		} else {
+			state := c.ConnectionState()
+			alpn := state.NegotiatedProtocol
+			if alpn == "" {
+				alpn = "  "
+			}
+			fmt.Println("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN", alpn, "\t", state.PeerCertificates[0].Subject)
+			c.Close()
+		}
+	}
+
+	s.mu.Lock()
+	s.high = addr
+	s.low = addr
+	s.mu.Unlock()
 	for i := 0; i < s.numberOfThread; i++ {
 		go s.Scan(i % 2 == 0)
 	}
@@ -69,21 +83,25 @@ func (s *Scanner) Run() {
 }
 
 func (s *Scanner) Scan(increment bool) {
-	var addr string
+	var addr net.IP
 	s.mu.Lock()
 	if increment {
 		s.high = nextIP(s.high, increment)
-		addr = s.high.String()
+		addr = s.high
 	} else {
 		s.low = nextIP(s.low, increment)
-		addr = s.low.String()
+		addr = s.low
 	}
 	s.mu.Unlock()
-	conn, err := net.DialTimeout("tcp", addr+":"+s.port, s.timeout)
+	str := addr.String()
+	if addr.To4() == nil {
+		str = "[" + str + "]"
+	}
+	conn, err := net.DialTimeout("tcp", str+":"+s.port, s.timeout)
 	if err != nil {
 		fmt.Println("Dial failed: ", err)
 	} else {
-		line := "" + conn.RemoteAddr().String() + " \t----- "
+		line := "" + conn.RemoteAddr().String() + " \t"
 		conn.SetDeadline(time.Now().Add(s.timeout))
 		c := tls.Client(conn, &tls.Config {
 			InsecureSkipVerify: true,
@@ -95,7 +113,11 @@ func (s *Scanner) Scan(increment bool) {
 		} else {
 			defer c.Close()
 			state := c.ConnectionState()
-			fmt.Println("", line, "Found TLS v", TlsDic[state.Version], "\tALPN", state.NegotiatedProtocol, "\t", state.PeerCertificates[0].Subject)
+			alpn := state.NegotiatedProtocol
+			if alpn == "" {
+				alpn = "  "
+			}
+			fmt.Println("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN", alpn, "\t", state.PeerCertificates[0].Subject)
 		}
 	}
 	go s.Scan(increment)
