@@ -37,19 +37,16 @@ type Scanner struct {
 }
 
 func (s *Scanner) Run() {
+	str := s.addr
 	addr := net.ParseIP(s.addr)
-	if addr == nil {
-		fmt.Println("Invalid address format")
-		return
-	}
-	str := addr.String()
-	if addr.To4() == nil {
-		str = "[" + str + "]"
+	if addr != nil && addr.To4() == nil {
+		str = "[" + addr.String() + "]"
 	}
 	conn, err := net.DialTimeout("tcp", str+":"+s.port, s.timeout)
 	if err != nil {
 		fmt.Println("Dial failed: ", err)
 	} else {
+		addr = conn.RemoteAddr().(*net.TCPAddr).IP
 		line := "" + conn.RemoteAddr().String() + " \t"
 		conn.SetDeadline(time.Now().Add(s.timeout))
 		c := tls.Client(conn, &tls.Config {
@@ -70,6 +67,10 @@ func (s *Scanner) Run() {
 		}
 	}
 
+	if addr == nil {
+		fmt.Println("Invalid address format")
+		return
+	}
 	s.mu.Lock()
 	s.high = addr
 	s.low = addr
