@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
@@ -14,21 +15,35 @@ func main() {
 	addrPtr := flag.String("addr", "127.0.0.1", "Destination to start scan")
 	portPtr := flag.String("port", "443", "Port to scan")
 	threadPtr := flag.Int("thread", 2, "Number of threads to scan in parallel")
+	outPutFile := flag.Bool("o", true, "Number of threads to scan in parallel")
+	timeOutPtr := flag.Int("timeOut", 10, "Time out of a scan")
+	showFailPtr := flag.Bool("showFail", false, "Is Show fail logs")
 	flag.Parse()
 	fmt.Println("Reality TLS Scanner running: ", *addrPtr, ":", *portPtr)
-	s := Scanner {
-		addr: *addrPtr,
-		port: *portPtr,
-		timeout: 10 * time.Second,
+	s := Scanner{
+		addr:           *addrPtr,
+		port:           *portPtr,
+		showFail:       *showFailPtr,
+		output:         *outPutFile,
+		timeout:        time.Duration(*timeOutPtr) * time.Second,
 		numberOfThread: *threadPtr,
-		mu: new(sync.Mutex),
+		mu:             new(sync.Mutex),
 	}
+	if *outPutFile {
+		s.logFile, _ = os.OpenFile("results.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	}
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	s.logFile.WriteString("start scan at : " + time.Now().In(location).String() + "\n")
+	defer s.logFile.Close()
 	s.Run()
 }
 
 type Scanner struct {
 	addr           string
 	port           string
+	output         bool
+	showFail       bool
+	logFile        *os.File
 	timeout        time.Duration
 	numberOfThread int
 	mu             *sync.Mutex
@@ -39,6 +54,10 @@ type Scanner struct {
 func (s *Scanner) Run() {
 	str := s.addr
 	addr := net.ParseIP(s.addr)
+	if addr == nil {
+		fmt.Println("Invalid address format")
+		return
+	}
 	if addr != nil && addr.To4() == nil {
 		str = "[" + addr.String() + "]"
 	}
@@ -49,9 +68,9 @@ func (s *Scanner) Run() {
 		addr = conn.RemoteAddr().(*net.TCPAddr).IP
 		line := "" + conn.RemoteAddr().String() + " \t"
 		conn.SetDeadline(time.Now().Add(s.timeout))
-		c := tls.Client(conn, &tls.Config {
+		c := tls.Client(conn, &tls.Config{
 			InsecureSkipVerify: true,
-			NextProtos: []string{"h2", "http/1.1"},
+			NextProtos:         []string{"h2", "http/1.1"},
 		})
 		err = c.Handshake()
 		if err != nil {
@@ -67,16 +86,12 @@ func (s *Scanner) Run() {
 		}
 	}
 
-	if addr == nil {
-		fmt.Println("Invalid address format")
-		return
-	}
 	s.mu.Lock()
 	s.high = addr
 	s.low = addr
 	s.mu.Unlock()
 	for i := 0; i < s.numberOfThread; i++ {
-		go s.Scan(i % 2 == 0)
+		go s.Scan(i%2 == 0)
 	}
 	for {
 		// now the scans are performed in goroutines
@@ -104,9 +119,9 @@ func (s *Scanner) Scan(increment bool) {
 	} else {
 		line := "" + conn.RemoteAddr().String() + " \t"
 		conn.SetDeadline(time.Now().Add(s.timeout))
-		c := tls.Client(conn, &tls.Config {
+		c := tls.Client(conn, &tls.Config{
 			InsecureSkipVerify: true,
-			NextProtos: []string{"h2", "http/1.1"},
+			NextProtos:         []string{"h2", "http/1.1"},
 		})
 		err = c.Handshake()
 		if err != nil {
@@ -118,25 +133,31 @@ func (s *Scanner) Scan(increment bool) {
 			if alpn == "" {
 				alpn = "  "
 			}
-			fmt.Println("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN", alpn, "\t", state.PeerCertificates[0].Subject)
+			outStr := fmt.Sprint("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN ", alpn, "\t", state.PeerCertificates[0].Subject)
+			if state.Version == 0x0304 && alpn == "h2" {
+				if s.output {
+					s.logFile.WriteString(outStr + "\n")
+				}
+			}
+			fmt.Println(outStr)
 		}
 	}
 	go s.Scan(increment)
 }
 
 func nextIP(ip net.IP, increment bool) net.IP {
-    // Convert to big.Int and increment
-    ipb := big.NewInt(0).SetBytes([]byte(ip))
+	// Convert to big.Int and increment
+	ipb := big.NewInt(0).SetBytes([]byte(ip))
 	if increment {
 		ipb.Add(ipb, big.NewInt(1))
 	} else {
 		ipb.Sub(ipb, big.NewInt(1))
 	}
 
-    // Add leading zeros
-    b := ipb.Bytes()
-    b = append(make([]byte, len(ip)-len(b)), b...)
-    return net.IP(b)
+	// Add leading zeros
+	b := ipb.Bytes()
+	b = append(make([]byte, len(ip)-len(b)), b...)
+	return net.IP(b)
 }
 
 var TlsDic = map[uint16]string{
