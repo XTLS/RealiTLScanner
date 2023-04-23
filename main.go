@@ -15,7 +15,7 @@ func main() {
 	addrPtr := flag.String("addr", "127.0.0.1", "Destination to start scan")
 	portPtr := flag.String("port", "443", "Port to scan")
 	threadPtr := flag.Int("thread", 2, "Number of threads to scan in parallel")
-	outPutFile := flag.Bool("o", true, "Number of threads to scan in parallel")
+	outPutFile := flag.Bool("o", false, "Is output to results.txt")
 	timeOutPtr := flag.Int("timeOut", 10, "Time out of a scan")
 	showFailPtr := flag.Bool("showFail", false, "Is Show fail logs")
 	flag.Parse()
@@ -54,10 +54,6 @@ type Scanner struct {
 func (s *Scanner) Run() {
 	str := s.addr
 	addr := net.ParseIP(s.addr)
-	if addr == nil {
-		fmt.Println("Invalid address format")
-		return
-	}
 	if addr != nil && addr.To4() == nil {
 		str = "[" + addr.String() + "]"
 	}
@@ -81,9 +77,13 @@ func (s *Scanner) Run() {
 			if alpn == "" {
 				alpn = "  "
 			}
-			fmt.Println("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN", alpn, "\t", state.PeerCertificates[0].Subject)
+			fmt.Println(fmt.Sprint("", line, "----- Found TLS v", TlsDic[state.Version], "\tALPN ", alpn, "\t", state.PeerCertificates[0].Subject))
 			c.Close()
 		}
+	}
+	if addr == nil {
+		fmt.Println("Invalid address format")
+		return
 	}
 
 	s.mu.Lock()
