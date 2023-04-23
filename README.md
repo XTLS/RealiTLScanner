@@ -9,9 +9,9 @@ Usage
 
 Recommend to run this tool locally. It may cause VPS to be flagged if you run scanner in the cloud.
 ```
-./RealiTLScanner -addr www.microsoft.com
-./RealiTLScanner -addr 20.53.203.50
-./RealiTLScanner -addr 2607:f8b0:4004:c1b::65 -thread 10
+./RealiTLScanner -addr www.microsoft.com -showFail -o
+./RealiTLScanner -addr 20.53.203.50 -showFail -o
+./RealiTLScanner -addr 2607:f8b0:4004:c1b::65 -thread 10 -showFail -o
 ```
 
 Example
