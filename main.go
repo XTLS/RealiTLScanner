@@ -31,8 +31,7 @@ func main() {
 	if *outPutFile {
 		s.logFile, _ = os.OpenFile("results.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	}
-	location, _ := time.LoadLocation("Asia/Shanghai")
-	s.Print(fmt.Sprint("Reality TLS Scanner running: ", *addrPtr, ":", *portPtr, " start scan at : ", time.Now().In(location).String()))
+	s.Print(fmt.Sprint("Reality TLS Scanner running: ", *addrPtr, ":", *portPtr, " start scan at : ", time.Now().Format(time.RFC3339)))
 	defer s.logFile.Close()
 	s.Run()
 }
