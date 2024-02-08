@@ -1,26 +1,65 @@
 # Reality - TLS - Scanner
 
-Build
-```
+## Building
+
+Requirement: Go 1.21+
+
+```bash
 go build
 ```
 
-Usage
+## Usage
 
-Recommend to run this tool locally. It may cause VPS to be flagged if you run scanner in the cloud.
-```
-./RealiTLScanner -addr www.microsoft.com -showFail -o
-./RealiTLScanner -addr 20.53.203.50 -showFail -o
-./RealiTLScanner -addr 2607:f8b0:4004:c1b::65 -thread 10 -showFail -o
+It is recommended to run this tool locally, as running the scanner in the cloud may cause the VPS to be flagged.
+```bash
+# Show help
+./RealiTLScanner
+
+# Scan a specific IP, IP CIDR or domain:
+./RealiTLScanner -addr 1.2.3.4
+
+# Scan a list of targets from a file (targets should be divided by line break):
+./RealiTLScanner -in in.txt
+
+# Specify a port to scan, default: 443
+./RealiTLScanner -addr 1.1.1.1 -port 443
+
+# Show verbose output, including failed scans and infeasible targets:
+./RealiTLScanner -addr 1.2.3.0/24 -v
+
+# Save results to a file, default: out.csv
+./RealiTLScanner -addr www.microsoft.com -out file.csv
+
+# Set a thread count, default: 1
+./RealiTLScanner -addr wiki.ubuntu.com -thread 10
+
+# Set a timeout for each scan, default: 10 (seconds)
+./RealiTLScanner -addr 107.172.1.1/16 -timeout 5
 ```
 
-Example
+Example stdout:
+```bash
+2024/02/08 20:51:10 INFO Started all scanning threads time=2024-02-08T20:51:10.017+08:00
+2024/02/08 20:51:10 INFO Connected to target feasible=true host=107.172.103.9 tls=1.3 alpn=h2 domain=rocky-linux.tk issuer="Let's Encrypt"
+2024/02/08 20:51:10 INFO Connected to target feasible=true host=107.172.103.11 tls=1.3 alpn=h2 domain=rn.allinai.dev issuer="Let's Encrypt"
+2024/02/08 20:51:13 INFO Connected to target feasible=true host=107.172.103.16 tls=1.3 alpn=h2 domain=san.hiddify01.foshou.vip issuer="Let's Encrypt"
+2024/02/08 20:51:13 INFO Connected to target feasible=true host=107.172.103.19 tls=1.3 alpn=h2 domain=mgzx19.cnscholar.top issuer="Let's Encrypt"
+2024/02/08 20:51:13 INFO Connected to target feasible=true host=107.172.103.22 tls=1.3 alpn=h2 domain=hy2.znull.top issuer=ZeroSSL
+2024/02/08 20:51:21 INFO Connected to target feasible=true host=107.172.103.37 tls=1.3 alpn=h2 domain=c1.webgenbd.com issuer="Let's Encrypt"
+2024/02/08 20:51:23 INFO Connected to target feasible=true host=107.172.103.46 tls=1.3 alpn=h2 domain=racknerd.myideal.xyz issuer="Let's Encrypt"
+2024/02/08 20:51:38 INFO Scanning completed time=2024-02-08T20:51:38.988+08:00 elapsed=28.97043s
 ```
-Reality TLS Scanner running:  20.53.203.50 : 443
- 20.53.203.50:443       -----  Found TLS v 1.3  ALPN h2          CN=*.oneroute.microsoft.com,O=Microsoft Corporation,L=Redmond,ST=WA,C=US
- 20.53.203.48:443       TLS handshake failed:  read tcp 192.168.211.138:37858->20.53.203.48:443: read: connection reset by peer
- 20.53.203.46:443       -----  Found TLS v 1.3  ALPN h2          CN=apiserver
- 20.53.203.45:443       -----  Found TLS v 1.2  ALPN http/1.1    CN=*.canon.com.au,O=Canon Australia Pty. Ltd.,L=Macquarie Park,ST=New South Wales,C=AU
- 20.53.203.43:443       -----  Found TLS v 1.2  ALPN             CN=bst-c0a0be99-3539-4442-8884-161054d9aba3.bastion.azure.com,O=Microsoft Corporation,L=Redmond,ST=WA,C=US
-Dial failed:  dial tcp 20.53.203.52:443: i/o timeout
+
+Example output file:
+
+```csv
+IP,DOMAIN,CERTIFICATE
+107.172.103.9,rocky-linux.tk,"Let's Encrypt"
+107.172.103.11,rn.allinai.dev,"Let's Encrypt"
+107.172.103.16,san.hiddify01.foshou.vip,"Let's Encrypt"
+107.172.103.19,mgzx19.cnscholar.top,"Let's Encrypt"
+107.172.103.22,hy2.znull.top,"ZeroSSL"
+107.172.103.37,c1.webgenbd.com,"Let's Encrypt"
+107.172.103.46,racknerd.myideal.xyz,"Let's Encrypt"
 ```
+
