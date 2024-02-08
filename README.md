@@ -57,12 +57,18 @@ Example output file:
 
 ```csv
 IP,DOMAIN,CERTIFICATE
-107.172.103.9,rocky-linux.tk,"Let's Encrypt"
-107.172.103.11,rn.allinai.dev,"Let's Encrypt"
-107.172.103.16,san.hiddify01.foshou.vip,"Let's Encrypt"
-107.172.103.19,mgzx19.cnscholar.top,"Let's Encrypt"
-107.172.103.22,hy2.znull.top,"ZeroSSL"
-107.172.103.37,c1.webgenbd.com,"Let's Encrypt"
-107.172.103.46,racknerd.myideal.xyz,"Let's Encrypt"
+85.158.4.237,mirror.scaleuptech.com,"Let's Encrypt"
+193.224.218.31,mirror-r2z1.einfra.hu,"Sectigo Limited"
+103.77.111.8,repos.del.extreme-ix.org,"Let's Encrypt"
+103.56.39.228,*.nxtgen.com,"DigiCert Inc"
+103.77.111.8,repos.del.extreme-ix.org,"Let's Encrypt"
+45.125.0.6,xtom.com.hk,"ZeroSSL"
+196.200.160.70,mirror.marwan.ma,"Let's Encrypt"
+202.70.64.2,*.ntc.net.np,"GlobalSign nv-sa"
+5.79.108.33,mirror.leaseweb.com,"Let's Encrypt"
+78.142.193.130,xtom.nl,"ZeroSSL"
+194.127.172.131,nl.mirrors.clouvider.net,"Let's Encrypt"
+103.194.167.213,*.cdn.i3d.net,"Sectigo Limited"
+202.36.220.86,mirror.2degrees.nz,"Let's Encrypt"
 ```
 
