@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,11 +41,18 @@ func ScanTLS(ip net.IP, out io.Writer) {
 	}
 	state := c.ConnectionState()
 	alpn := state.NegotiatedProtocol
-	log := slog.Debug
-	if state.Version == 0x0304 && alpn == "h2" {
-		log = slog.Info
-		_, _ = io.WriteString(out, ip.String()+"\n")
+	domain := state.PeerCertificates[0].Subject.CommonName
+	issuers := strings.Join(state.PeerCertificates[0].Issuer.Organization, " | ")
+	log := slog.Info
+	feasible := true
+	if state.Version != 0x0304 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
+		// not feasible
+		log = slog.Debug
+		feasible = false
+	} else {
+		_, _ = io.WriteString(out, strings.Join([]string{ip.String(), domain, "\"" + issuers + "\""}, ",")+"\n")
 	}
-	log("Connected to target", "host", ip.String(), "tls", TLSDictionary[state.Version],
-		"alpn", alpn, "cert", state.PeerCertificates[0].Subject)
+	log("Connected to target", "feasible", feasible, "host", ip.String(),
+		"tls", TLSDictionary[state.Version],
+		"alpn", alpn, "domain", domain, "issuer", issuers)
 }
