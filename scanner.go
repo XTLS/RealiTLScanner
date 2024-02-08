@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"io"
 	"log/slog"
 	"net"
 	"strconv"
@@ -17,7 +16,7 @@ var TLSDictionary = map[uint16]string{
 	0x0304: "1.3",
 }
 
-func ScanTLS(ip net.IP, out io.Writer) {
+func ScanTLS(ip net.IP, out chan<- string) {
 	hostPort := net.JoinHostPort(ip.String(), strconv.Itoa(port))
 	conn, err := net.DialTimeout("tcp", hostPort, time.Duration(timeout)*time.Second)
 	if err != nil {
@@ -50,7 +49,7 @@ func ScanTLS(ip net.IP, out io.Writer) {
 		log = slog.Debug
 		feasible = false
 	} else {
-		_, _ = io.WriteString(out, strings.Join([]string{ip.String(), domain, "\"" + issuers + "\""}, ",")+"\n")
+		out <- strings.Join([]string{ip.String(), domain, "\"" + issuers + "\""}, ",") + "\n"
 	}
 	log("Connected to target", "feasible", feasible, "host", ip.String(),
 		"tls", TLSDictionary[state.Version],

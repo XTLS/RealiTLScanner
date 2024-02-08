@@ -98,12 +98,14 @@ func main() {
 		slog.Info("Parsed domains", "count", len(domains))
 		ipChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
 	}
+	outCh := OutWriter(outWriter)
+	defer close(outCh)
 	var wg sync.WaitGroup
 	wg.Add(thread)
 	for i := 0; i < thread; i++ {
 		go func() {
 			for ip := range ipChan {
-				ScanTLS(ip, outWriter)
+				ScanTLS(ip, outCh)
 			}
 			wg.Done()
 		}()

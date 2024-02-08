@@ -92,3 +92,12 @@ func RemoveDuplicateStr(strSlice []string) []string {
 	}
 	return list
 }
+func OutWriter(writer io.Writer) chan<- string {
+	ch := make(chan string)
+	go func() {
+		for s := range ch {
+			_, _ = io.WriteString(writer, s)
+		}
+	}()
+	return ch
+}
