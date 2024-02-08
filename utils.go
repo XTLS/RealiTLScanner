@@ -68,3 +68,27 @@ func Iterate(reader io.Reader) <-chan net.IP {
 	}()
 	return ipChan
 }
+func ExistOnlyOne(arr []string) bool {
+	exist := false
+	for _, item := range arr {
+		if item != "" {
+			if exist {
+				return false
+			} else {
+				exist = true
+			}
+		}
+	}
+	return exist
+}
+func RemoveDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	var list []string
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
