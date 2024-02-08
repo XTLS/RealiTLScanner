@@ -16,8 +16,8 @@ var TLSDictionary = map[uint16]string{
 	0x0304: "1.3",
 }
 
-func ScanTLS(ip net.IP, out chan<- string) {
-	hostPort := net.JoinHostPort(ip.String(), strconv.Itoa(port))
+func ScanTLS(host Host, out chan<- string) {
+	hostPort := net.JoinHostPort(host.IP.String(), strconv.Itoa(port))
 	conn, err := net.DialTimeout("tcp", hostPort, time.Duration(timeout)*time.Second)
 	if err != nil {
 		slog.Debug("Cannot dial", "target", hostPort)
@@ -29,11 +29,15 @@ func ScanTLS(ip net.IP, out chan<- string) {
 		slog.Error("Error setting deadline", "err", err)
 		return
 	}
-	c := tls.Client(conn, &tls.Config{
+	tlsCfg := &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         []string{"h2", "http/1.1"},
 		CurvePreferences:   []tls.CurveID{tls.X25519},
-	})
+	}
+	if host.Type == HostTypeDomain {
+		tlsCfg.ServerName = host.Origin
+	}
+	c := tls.Client(conn, tlsCfg)
 	err = c.Handshake()
 	if err != nil {
 		slog.Debug("TLS handshake failed", "target", hostPort)
@@ -50,9 +54,9 @@ func ScanTLS(ip net.IP, out chan<- string) {
 		log = slog.Debug
 		feasible = false
 	} else {
-		out <- strings.Join([]string{ip.String(), domain, "\"" + issuers + "\""}, ",") + "\n"
+		out <- strings.Join([]string{host.IP.String(), host.Origin, domain, "\"" + issuers + "\""}, ",") + "\n"
 	}
-	log("Connected to target", "feasible", feasible, "host", ip.String(),
-		"tls", TLSDictionary[state.Version],
-		"alpn", alpn, "domain", domain, "issuer", issuers)
+	log("Connected to target", "feasible", feasible, "ip", host.IP.String(),
+		"origin", host.Origin,
+		"tls", TLSDictionary[state.Version], "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers)
 }
