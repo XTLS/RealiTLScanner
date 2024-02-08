@@ -30,7 +30,7 @@ func main() {
 		"IPs, IP CIDRs or domains to scan, divided by line break")
 	flag.IntVar(&port, "port", 443, "specify a HTTPS port to check")
 	flag.IntVar(&thread, "thread", 1, "count of concurrent tasks")
-	flag.StringVar(&out, "out", "", "output file to store the result")
+	flag.StringVar(&out, "out", "out.csv", "output file to store the result")
 	flag.IntVar(&timeout, "timeout", 10, "timeout for every check")
 	flag.BoolVar(&verbose, "v", false, "verbose output")
 	flag.BoolVar(&enableIPv6, "46", false, "Enable IPv6 in additional to IPv4")
