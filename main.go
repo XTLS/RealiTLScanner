@@ -53,6 +53,8 @@ func main() {
 			slog.Error("Error opening file", "path", out)
 			return
 		}
+		defer f.Close()
+		_, _ = f.WriteString("IP,DOMAIN,CERTIFICATE\n")
 		outWriter = f
 	}
 	var ipChan <-chan net.IP
@@ -64,6 +66,7 @@ func main() {
 			slog.Error("Error reading file", "path", in)
 			return
 		}
+		defer f.Close()
 		ipChan = Iterate(f)
 	}
 	var wg sync.WaitGroup
