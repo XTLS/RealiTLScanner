@@ -4,7 +4,6 @@ import (
 	"flag"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -62,12 +61,12 @@ func main() {
 			return
 		}
 		defer f.Close()
-		_, _ = f.WriteString("IP,DOMAIN,CERTIFICATE\n")
+		_, _ = f.WriteString("IP,ORIGIN,CERT_DOMAIN,CERT_ISSUER\n")
 		outWriter = f
 	}
-	var ipChan <-chan net.IP
+	var hostChan <-chan Host
 	if addr != "" {
-		ipChan = Iterate(strings.NewReader(addr))
+		hostChan = Iterate(strings.NewReader(addr))
 	} else if in != "" {
 		f, err := os.Open(in)
 		if err != nil {
@@ -75,7 +74,7 @@ func main() {
 			return
 		}
 		defer f.Close()
-		ipChan = Iterate(f)
+		hostChan = Iterate(f)
 	} else {
 		slog.Info("Fetching url...")
 		resp, err := http.Get(url)
@@ -96,7 +95,7 @@ func main() {
 		}
 		domains = RemoveDuplicateStr(domains)
 		slog.Info("Parsed domains", "count", len(domains))
-		ipChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
+		hostChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
 	}
 	outCh := OutWriter(outWriter)
 	defer close(outCh)
@@ -104,7 +103,7 @@ func main() {
 	wg.Add(thread)
 	for i := 0; i < thread; i++ {
 		go func() {
-			for ip := range ipChan {
+			for ip := range hostChan {
 				ScanTLS(ip, outCh)
 			}
 			wg.Done()

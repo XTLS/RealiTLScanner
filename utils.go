@@ -10,11 +10,26 @@ import (
 	"strings"
 )
 
-func Iterate(reader io.Reader) <-chan net.IP {
+const (
+	_ = iota
+	HostTypeIP
+	HostTypeCIDR
+	HostTypeDomain
+)
+
+type HostType int
+
+type Host struct {
+	IP     net.IP
+	Origin string
+	Type   HostType
+}
+
+func Iterate(reader io.Reader) <-chan Host {
 	scanner := bufio.NewScanner(reader)
-	ipChan := make(chan net.IP)
+	hostChan := make(chan Host)
 	go func() {
-		defer close(ipChan)
+		defer close(hostChan)
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
 			if line == "" {
@@ -23,7 +38,11 @@ func Iterate(reader io.Reader) <-chan net.IP {
 			ip := net.ParseIP(line)
 			if ip != nil && (ip.To4() != nil || enableIPv6) {
 				// ip address
-				ipChan <- ip
+				hostChan <- Host{
+					IP:     ip,
+					Origin: line,
+					Type:   HostTypeIP,
+				}
 				continue
 			}
 			_, _, err := net.ParseCIDR(line)
@@ -44,7 +63,11 @@ func Iterate(reader io.Reader) <-chan net.IP {
 					}
 					ip = net.ParseIP(addr.String())
 					if ip != nil {
-						ipChan <- ip
+						hostChan <- Host{
+							IP:     ip,
+							Origin: line,
+							Type:   HostTypeCIDR,
+						}
 					}
 					addr = addr.Next()
 				}
@@ -55,7 +78,11 @@ func Iterate(reader io.Reader) <-chan net.IP {
 				// domain
 				for _, ip = range ips {
 					if ip.To4() != nil || enableIPv6 {
-						ipChan <- ip
+						hostChan <- Host{
+							IP:     ip,
+							Origin: line,
+							Type:   HostTypeDomain,
+						}
 					}
 				}
 				continue
@@ -66,7 +93,7 @@ func Iterate(reader io.Reader) <-chan net.IP {
 			slog.Error("Read file error", "err", err)
 		}
 	}()
-	return ipChan
+	return hostChan
 }
 func ExistOnlyOne(arr []string) bool {
 	exist := false

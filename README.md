@@ -56,19 +56,16 @@ Example stdout:
 Example output file:
 
 ```csv
-IP,DOMAIN,CERTIFICATE
-85.158.4.237,mirror.scaleuptech.com,"Let's Encrypt"
-193.224.218.31,mirror-r2z1.einfra.hu,"Sectigo Limited"
-103.77.111.8,repos.del.extreme-ix.org,"Let's Encrypt"
-103.56.39.228,*.nxtgen.com,"DigiCert Inc"
-103.77.111.8,repos.del.extreme-ix.org,"Let's Encrypt"
-45.125.0.6,xtom.com.hk,"ZeroSSL"
-196.200.160.70,mirror.marwan.ma,"Let's Encrypt"
-202.70.64.2,*.ntc.net.np,"GlobalSign nv-sa"
-5.79.108.33,mirror.leaseweb.com,"Let's Encrypt"
-78.142.193.130,xtom.nl,"ZeroSSL"
-194.127.172.131,nl.mirrors.clouvider.net,"Let's Encrypt"
-103.194.167.213,*.cdn.i3d.net,"Sectigo Limited"
-202.36.220.86,mirror.2degrees.nz,"Let's Encrypt"
+IP,ORIGIN,CERT_DOMAIN,CERT_ISSUER
+52.140.219.235,www.cherryservers.com,*.cherryservers.com,"GlobalSign nv-sa"
+172.66.40.234,veesp.com,veesp.com,"Cloudflare, Inc."
+172.66.43.22,veesp.com,veesp.com,"Cloudflare, Inc."
+193.1.193.205,www.heanet.ie,www.heanet.ie,"GEANT Vereniging"
+185.242.104.18,mirror.veesp.com,mirror.veesp.com,"Let's Encrypt"
+79.98.24.240,www.serveriai.lt,*.serveriai.lt,"Sectigo Limited"
+91.211.244.3,www.vpsnet.com,*.vpsnet.com,"Sectigo Limited"
+31.131.0.101,www.ihost.md,ihost.md,"Sectigo Limited"
+194.127.172.131,nl.mirrors.clouvider.net,nl.mirrors.clouvider.net,"Let's Encrypt"
+31.131.0.222,mirror.ihost.md,mirror.ihost.md,"Let's Encrypt"
 ```
 
