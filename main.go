@@ -5,7 +5,9 @@ import (
 	"io"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +21,7 @@ var out string
 var timeout int
 var verbose bool
 var enableIPv6 bool
+var url string
 
 func main() {
 	_ = os.Unsetenv("ALL_PROXY")
@@ -34,6 +37,8 @@ func main() {
 	flag.IntVar(&timeout, "timeout", 10, "timeout for every check")
 	flag.BoolVar(&verbose, "v", false, "verbose output")
 	flag.BoolVar(&enableIPv6, "46", false, "Enable IPv6 in additional to IPv4")
+	flag.StringVar(&url, "url", "", "Crawl the domain list from a URL, "+
+		"e.g. https://launchpad.net/ubuntu/+archivemirrors")
 	flag.Parse()
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
@@ -44,9 +49,8 @@ func main() {
 			Level: slog.LevelInfo,
 		})))
 	}
-	if addr != "" && in != "" ||
-		addr == "" && in == "" {
-		slog.Error("You must specify either `addr` or `in`")
+	if !ExistOnlyOne([]string{addr, in, url}) {
+		slog.Error("You must specify and only specify one of `addr`, `in`, or `url`")
 		flag.PrintDefaults()
 		return
 	}
@@ -64,7 +68,7 @@ func main() {
 	var ipChan <-chan net.IP
 	if addr != "" {
 		ipChan = Iterate(strings.NewReader(addr))
-	} else {
+	} else if in != "" {
 		f, err := os.Open(in)
 		if err != nil {
 			slog.Error("Error reading file", "path", in)
@@ -72,6 +76,27 @@ func main() {
 		}
 		defer f.Close()
 		ipChan = Iterate(f)
+	} else {
+		slog.Info("Fetching url...")
+		resp, err := http.Get(url)
+		if err != nil {
+			slog.Error("Error fetching url", "err", err)
+			return
+		}
+		defer resp.Body.Close()
+		v, err := io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Error("Error reading body", "err", err)
+			return
+		}
+		arr := regexp.MustCompile("(http|https)://(.*?)[/\"<>\\s]+").FindAllStringSubmatch(string(v), -1)
+		var domains []string
+		for _, m := range arr {
+			domains = append(domains, m[2])
+		}
+		domains = RemoveDuplicateStr(domains)
+		slog.Info("Parsed domains", "count", len(domains))
+		ipChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
 	}
 	var wg sync.WaitGroup
 	wg.Add(thread)
