@@ -32,6 +32,7 @@ func ScanTLS(ip net.IP, out chan<- string) {
 	c := tls.Client(conn, &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         []string{"h2", "http/1.1"},
+		CurvePreferences:   []tls.CurveID{tls.X25519},
 	})
 	err = c.Handshake()
 	if err != nil {
