@@ -21,6 +21,9 @@ It is recommended to run this tool locally, as running the scanner in the cloud 
 # Scan a list of targets from a file (targets should be divided by line break):
 ./RealiTLScanner -in in.txt
 
+# Crawl domains from a URL and scan:
+./RealiTLScanner -url https://launchpad.net/ubuntu/+archivemirrors
+
 # Specify a port to scan, default: 443
 ./RealiTLScanner -addr 1.1.1.1 -port 443
 
