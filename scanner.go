@@ -9,13 +9,6 @@ import (
 	"time"
 )
 
-var TLSDictionary = map[uint16]string{
-	0x0301: "1.0",
-	0x0302: "1.1",
-	0x0303: "1.2",
-	0x0304: "1.3",
-}
-
 func ScanTLS(host Host, out chan<- string) {
 	if host.IP == nil {
 		ips, err := net.LookupIP(host.Origin)
@@ -67,7 +60,7 @@ func ScanTLS(host Host, out chan<- string) {
 	issuers := strings.Join(state.PeerCertificates[0].Issuer.Organization, " | ")
 	log := slog.Info
 	feasible := true
-	if state.Version != 0x0304 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
+	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
 		// not feasible
 		log = slog.Debug
 		feasible = false
@@ -76,5 +69,5 @@ func ScanTLS(host Host, out chan<- string) {
 	}
 	log("Connected to target", "feasible", feasible, "ip", host.IP.String(),
 		"origin", host.Origin,
-		"tls", TLSDictionary[state.Version], "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers)
+		"tls", tls.VersionName(state.Version), "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers)
 }
