@@ -27,14 +27,14 @@ func main() {
 	_ = os.Unsetenv("HTTP_PROXY")
 	_ = os.Unsetenv("HTTPS_PROXY")
 	_ = os.Unsetenv("NO_PROXY")
-	flag.StringVar(&addr, "addr", "", "specify an IP, IP CIDR or domain to scan")
-	flag.StringVar(&in, "in", "", "specify a file that contains multiple "+
+	flag.StringVar(&addr, "addr", "", "Specify an IP, IP CIDR or domain to scan")
+	flag.StringVar(&in, "in", "", "Specify a file that contains multiple "+
 		"IPs, IP CIDRs or domains to scan, divided by line break")
-	flag.IntVar(&port, "port", 443, "specify a HTTPS port to check")
-	flag.IntVar(&thread, "thread", 1, "count of concurrent tasks")
-	flag.StringVar(&out, "out", "out.csv", "output file to store the result")
-	flag.IntVar(&timeout, "timeout", 10, "timeout for every check")
-	flag.BoolVar(&verbose, "v", false, "verbose output")
+	flag.IntVar(&port, "port", 443, "Specify a HTTPS port to check")
+	flag.IntVar(&thread, "thread", 1, "Count of concurrent tasks")
+	flag.StringVar(&out, "out", "out.csv", "Output file to store the result")
+	flag.IntVar(&timeout, "timeout", 10, "Timeout for every check")
+	flag.BoolVar(&verbose, "v", false, "Verbose output")
 	flag.BoolVar(&enableIPv6, "46", false, "Enable IPv6 in additional to IPv4")
 	flag.StringVar(&url, "url", "", "Crawl the domain list from a URL, "+
 		"e.g. https://launchpad.net/ubuntu/+archivemirrors")
