@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net"
 	"net/netip"
+	"regexp"
 	"strings"
 )
 
@@ -73,17 +74,12 @@ func Iterate(reader io.Reader) <-chan Host {
 				}
 				continue
 			}
-			ips, err := net.LookupIP(line)
-			if err == nil {
+			if ValidateDomainName(line) {
 				// domain
-				for _, ip = range ips {
-					if ip.To4() != nil || enableIPv6 {
-						hostChan <- Host{
-							IP:     ip,
-							Origin: line,
-							Type:   HostTypeDomain,
-						}
-					}
+				hostChan <- Host{
+					IP:     nil,
+					Origin: line,
+					Type:   HostTypeDomain,
 				}
 				continue
 			}
@@ -94,6 +90,10 @@ func Iterate(reader io.Reader) <-chan Host {
 		}
 	}()
 	return hostChan
+}
+func ValidateDomainName(domain string) bool {
+	r := regexp.MustCompile(`(?m)^[A-Za-z0-9\-.]+$`)
+	return r.MatchString(domain)
 }
 func ExistOnlyOne(arr []string) bool {
 	exist := false
