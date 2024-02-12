@@ -11,22 +11,12 @@ import (
 
 func ScanTLS(host Host, out chan<- string) {
 	if host.IP == nil {
-		ips, err := net.LookupIP(host.Origin)
+		ip, err := LookupIP(host.Origin)
 		if err != nil {
-			slog.Debug("Failed to lookup", "origin", host.Origin, "err", err)
+			slog.Debug("Failed to get IP from the origin", "origin", host.Origin, "err", err)
 			return
 		}
-		var arr []net.IP
-		for _, ip := range ips {
-			if ip.To4() != nil || enableIPv6 {
-				arr = append(arr, ip)
-			}
-		}
-		if len(arr) == 0 {
-			slog.Debug("No IP found", "origin", host.Origin)
-			return
-		}
-		host.IP = arr[0]
+		host.IP = ip
 	}
 	hostPort := net.JoinHostPort(host.IP.String(), strconv.Itoa(port))
 	conn, err := net.DialTimeout("tcp", hostPort, time.Duration(timeout)*time.Second)
