@@ -39,10 +39,6 @@ func main() {
 	flag.StringVar(&url, "url", "", "Crawl the domain list from a URL, "+
 		"e.g. https://launchpad.net/ubuntu/+archivemirrors")
 	flag.Parse()
-	s := Scanner{
-		mu: new(sync.Mutex),
-	}
-
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
@@ -70,7 +66,7 @@ func main() {
 	}
 	var hostChan <-chan Host
 	if addr != "" {
-		hostChan = Iterate(strings.NewReader(addr), true)
+		hostChan = Iterate(strings.NewReader(addr))
 	} else if in != "" {
 		f, err := os.Open(in)
 		if err != nil {
@@ -78,7 +74,7 @@ func main() {
 			return
 		}
 		defer f.Close()
-		hostChan = Iterate(f, false)
+		hostChan = Iterate(f)
 	} else {
 		slog.Info("Fetching url...")
 		resp, err := http.Get(url)
@@ -99,7 +95,7 @@ func main() {
 		}
 		domains = RemoveDuplicateStr(domains)
 		slog.Info("Parsed domains", "count", len(domains))
-		hostChan = Iterate(strings.NewReader(strings.Join(domains, "\n")), len(domains) <= 1)
+		hostChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
 	}
 	outCh := OutWriter(outWriter)
 	defer close(outCh)
@@ -108,13 +104,7 @@ func main() {
 	for i := 0; i < thread; i++ {
 		go func() {
 			for ip := range hostChan {
-				ip = s.Scan(ip, outCh, true)
-				if ip.Infinity { // only one ip
-					for i := 0; i < thread - 1; i++ {
-						go s.Scan(ip, outCh, i%2 == 1)
-					}
-					for {}
-				}
+				ScanTLS(ip, outCh)
 			}
 			wg.Done()
 		}()
