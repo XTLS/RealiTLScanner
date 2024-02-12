@@ -17,6 +17,7 @@ It is recommended to run this tool locally, as running the scanner in the cloud 
 
 # Scan a specific IP, IP CIDR or domain:
 ./RealiTLScanner -addr 1.2.3.4
+# Note: infinity mode will be enabled automatically if `addr` is an IP or domain
 
 # Scan a list of targets from a file (targets should be divided by line break):
 ./RealiTLScanner -in in.txt
