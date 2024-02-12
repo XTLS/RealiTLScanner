@@ -21,12 +21,13 @@ const (
 type HostType int
 
 type Host struct {
-	IP     net.IP
-	Origin string
-	Type   HostType
+	IP       net.IP
+	Origin   string
+	Type     HostType
+	Infinity bool
 }
 
-func Iterate(reader io.Reader) <-chan Host {
+func Iterate(reader io.Reader, infinity bool) <-chan Host {
 	scanner := bufio.NewScanner(reader)
 	hostChan := make(chan Host)
 	go func() {
@@ -40,9 +41,10 @@ func Iterate(reader io.Reader) <-chan Host {
 			if ip != nil && (ip.To4() != nil || enableIPv6) {
 				// ip address
 				hostChan <- Host{
-					IP:     ip,
-					Origin: line,
-					Type:   HostTypeIP,
+					IP:       ip,
+					Origin:   line,
+					Type:     HostTypeIP,
+					Infinity: infinity,
 				}
 				continue
 			}
@@ -65,9 +67,10 @@ func Iterate(reader io.Reader) <-chan Host {
 					ip = net.ParseIP(addr.String())
 					if ip != nil {
 						hostChan <- Host{
-							IP:     ip,
-							Origin: line,
-							Type:   HostTypeCIDR,
+							IP:       ip,
+							Origin:   line,
+							Type:     HostTypeCIDR,
+							Infinity: false,
 						}
 					}
 					addr = addr.Next()
@@ -77,9 +80,10 @@ func Iterate(reader io.Reader) <-chan Host {
 			if ValidateDomainName(line) {
 				// domain
 				hostChan <- Host{
-					IP:     nil,
-					Origin: line,
-					Type:   HostTypeDomain,
+					IP:       nil,
+					Origin:   line,
+					Type:     HostTypeDomain,
+					Infinity: infinity,
 				}
 				continue
 			}

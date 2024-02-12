@@ -31,7 +31,7 @@ func main() {
 	flag.StringVar(&in, "in", "", "Specify a file that contains multiple "+
 		"IPs, IP CIDRs or domains to scan, divided by line break")
 	flag.IntVar(&port, "port", 443, "Specify a HTTPS port to check")
-	flag.IntVar(&thread, "thread", 1, "Count of concurrent tasks")
+	flag.IntVar(&thread, "thread", 2, "Count of concurrent tasks")
 	flag.StringVar(&out, "out", "out.csv", "Output file to store the result")
 	flag.IntVar(&timeout, "timeout", 10, "Timeout for every check")
 	flag.BoolVar(&verbose, "v", false, "Verbose output")
@@ -39,6 +39,10 @@ func main() {
 	flag.StringVar(&url, "url", "", "Crawl the domain list from a URL, "+
 		"e.g. https://launchpad.net/ubuntu/+archivemirrors")
 	flag.Parse()
+	s := Scanner{
+		mu: new(sync.Mutex),
+	}
+
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
@@ -66,7 +70,7 @@ func main() {
 	}
 	var hostChan <-chan Host
 	if addr != "" {
-		hostChan = Iterate(strings.NewReader(addr))
+		hostChan = Iterate(strings.NewReader(addr), true)
 	} else if in != "" {
 		f, err := os.Open(in)
 		if err != nil {
@@ -74,7 +78,7 @@ func main() {
 			return
 		}
 		defer f.Close()
-		hostChan = Iterate(f)
+		hostChan = Iterate(f, false)
 	} else {
 		slog.Info("Fetching url...")
 		resp, err := http.Get(url)
@@ -95,7 +99,7 @@ func main() {
 		}
 		domains = RemoveDuplicateStr(domains)
 		slog.Info("Parsed domains", "count", len(domains))
-		hostChan = Iterate(strings.NewReader(strings.Join(domains, "\n")))
+		hostChan = Iterate(strings.NewReader(strings.Join(domains, "\n")), len(domains) <= 1)
 	}
 	outCh := OutWriter(outWriter)
 	defer close(outCh)
@@ -104,7 +108,13 @@ func main() {
 	for i := 0; i < thread; i++ {
 		go func() {
 			for ip := range hostChan {
-				ScanTLS(ip, outCh)
+				s.Scan(ip, outCh, true)
+				if ip.Infinity { // only one ip
+					for i := 0; i < thread - 1; i++ {
+						go s.Scan(ip, outCh, i%2 == 1)
+					}
+					for {}
+				}
 			}
 			wg.Done()
 		}()
