@@ -66,7 +66,7 @@ func main() {
 	}
 	var hostChan <-chan Host
 	if addr != "" {
-		hostChan = Iterate(strings.NewReader(addr))
+		hostChan = IterateAddr(addr)
 	} else if in != "" {
 		f, err := os.Open(in)
 		if err != nil {
