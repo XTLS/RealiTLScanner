@@ -17,7 +17,7 @@ type Scanner struct {
 	low  net.IP
 }
 
-func (s *Scanner) Scan(host Host, out chan<- string, increment bool) {
+func (s *Scanner) Scan(host Host, out chan<- string, increment bool) Host {
 	if host.Infinity && host.IP != nil {
 		s.mu.Lock()
 		if s.high == nil {
@@ -34,18 +34,19 @@ func (s *Scanner) Scan(host Host, out chan<- string, increment bool) {
 		}
 		s.mu.Unlock()
 	}
-	ScanTLS(host, out, increment)
+	host = ScanTLS(host, out, increment)
 	if host.Infinity && host.IP != nil {
 		go s.Scan(host, out, increment)
 	}
+	return host
 }
 
-func ScanTLS(host Host, out chan<- string, increment bool) {
+func ScanTLS(host Host, out chan<- string, increment bool) Host {
 	if host.IP == nil {
 		ips, err := net.LookupIP(host.Origin)
 		if err != nil {
 			slog.Debug("Failed to lookup", "origin", host.Origin, "err", err)
-			return
+			return host
 		}
 		var arr []net.IP
 		for _, ip := range ips {
@@ -55,7 +56,7 @@ func ScanTLS(host Host, out chan<- string, increment bool) {
 		}
 		if len(arr) == 0 {
 			slog.Debug("No IP found", "origin", host.Origin)
-			return
+			return host
 		}
 		host.IP = arr[0]
 	}
@@ -63,13 +64,13 @@ func ScanTLS(host Host, out chan<- string, increment bool) {
 	conn, err := net.DialTimeout("tcp", hostPort, time.Duration(timeout)*time.Second)
 	if err != nil {
 		slog.Debug("Cannot dial", "target", hostPort)
-		return
+		return host
 	}
 	defer conn.Close()
 	err = conn.SetDeadline(time.Now().Add(time.Duration(timeout) * time.Second))
 	if err != nil {
 		slog.Error("Error setting deadline", "err", err)
-		return
+		return host
 	}
 	tlsCfg := &tls.Config{
 		InsecureSkipVerify: true,
@@ -83,7 +84,7 @@ func ScanTLS(host Host, out chan<- string, increment bool) {
 	err = c.Handshake()
 	if err != nil {
 		slog.Debug("TLS handshake failed", "target", hostPort)
-		return
+		return host
 	}
 	state := c.ConnectionState()
 	alpn := state.NegotiatedProtocol
@@ -101,6 +102,7 @@ func ScanTLS(host Host, out chan<- string, increment bool) {
 	log("Connected to target", "feasible", feasible, "ip", host.IP.String(),
 		"origin", host.Origin,
 		"tls", tls.VersionName(state.Version), "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers)
+	return host
 }
 
 func nextIP(ip net.IP, increment bool) net.IP {

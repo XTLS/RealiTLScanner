@@ -108,7 +108,7 @@ func main() {
 	for i := 0; i < thread; i++ {
 		go func() {
 			for ip := range hostChan {
-				s.Scan(ip, outCh, true)
+				ip = s.Scan(ip, outCh, true)
 				if ip.Infinity { // only one ip
 					for i := 0; i < thread - 1; i++ {
 						go s.Scan(ip, outCh, i%2 == 1)
