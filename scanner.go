@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func ScanTLS(host Host, out chan<- string) {
+func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	if host.IP == nil {
 		ip, err := LookupIP(host.Origin)
 		if err != nil {
@@ -50,14 +50,17 @@ func ScanTLS(host Host, out chan<- string) {
 	issuers := strings.Join(state.PeerCertificates[0].Issuer.Organization, " | ")
 	log := slog.Info
 	feasible := true
+	geoCode := geo.GetGeo(host.IP)
 	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
 		// not feasible
 		log = slog.Debug
 		feasible = false
 	} else {
-		out <- strings.Join([]string{host.IP.String(), host.Origin, domain, "\"" + issuers + "\""}, ",") + "\n"
+		out <- strings.Join([]string{host.IP.String(), host.Origin, domain, "\"" + issuers + "\"", geoCode}, ",") +
+			"\n"
 	}
 	log("Connected to target", "feasible", feasible, "ip", host.IP.String(),
 		"origin", host.Origin,
-		"tls", tls.VersionName(state.Version), "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers)
+		"tls", tls.VersionName(state.Version), "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers,
+		"geo", geoCode)
 }

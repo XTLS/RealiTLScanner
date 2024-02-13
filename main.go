@@ -61,7 +61,7 @@ func main() {
 			return
 		}
 		defer f.Close()
-		_, _ = f.WriteString("IP,ORIGIN,CERT_DOMAIN,CERT_ISSUER\n")
+		_, _ = f.WriteString("IP,ORIGIN,CERT_DOMAIN,CERT_ISSUER,GEO_CODE\n")
 		outWriter = f
 	}
 	var hostChan <-chan Host
@@ -99,12 +99,13 @@ func main() {
 	}
 	outCh := OutWriter(outWriter)
 	defer close(outCh)
+	geo := NewGeo()
 	var wg sync.WaitGroup
 	wg.Add(thread)
 	for i := 0; i < thread; i++ {
 		go func() {
 			for ip := range hostChan {
-				ScanTLS(ip, outCh)
+				ScanTLS(ip, outCh, geo)
 			}
 			wg.Done()
 		}()
