@@ -8,6 +8,14 @@ Requirement: Go 1.21+
 go build
 ```
 
+## Docker
+
+This tool can be run within docker image [baterflyrity/realitlscanner](https://hub.docker.com/r/baterflyrity/realitlscanner) with command
+```bash
+docker run -it --rm baterflyrity/realitlscanner <options>
+```
+which corresponds binary command `./RealiTLScanner <options>`.
+
 ## Usage
 
 It is recommended to run this tool locally, as running the scanner in the cloud may cause the VPS to be flagged.
