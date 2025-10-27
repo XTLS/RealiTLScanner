@@ -51,16 +51,25 @@ func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	log := slog.Info
 	feasible := true
 	geoCode := geo.GetGeo(host.IP)
+	cn2ip := "false"
+	cnIP,err := LookupIP(domain)
+	if err != nil {
+		slog.Debug("Failed to get IP from the cert-domain", "cert-domain", domain, "err", err)
+		return
+	}
+	if cnIP.String() == host.IP.String() {
+		cn2ip = "true"
+	}
 	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
 		// not feasible
 		log = slog.Debug
 		feasible = false
 	} else {
-		out <- strings.Join([]string{host.IP.String(), host.Origin, domain, "\"" + issuers + "\"", geoCode}, ",") +
+		out <- strings.Join([]string{host.IP.String(), host.Origin, domain, "\"" + issuers + "\"", geoCode,cnIP.String(),cn2ip}, ",") +
 			"\n"
 	}
 	log("Connected to target", "feasible", feasible, "ip", host.IP.String(),
 		"origin", host.Origin,
 		"tls", tls.VersionName(state.Version), "alpn", alpn, "cert-domain", domain, "cert-issuer", issuers,
-		"geo", geoCode)
+		"geo", geoCode,"cnHostIP",cnIP,"cn2ip",cn2ip)
 }
