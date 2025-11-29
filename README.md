@@ -40,7 +40,18 @@ It is recommended to run this tool locally, as running the scanner in the cloud 
 # Set a timeout for each scan, default: 10 (seconds)
 ./RealiTLScanner -addr 107.172.1.1/16 -timeout 5
 ```
-
+### In docker way
+Build container by yourself (you do not needed in golonag on your host)
+```bash
+docker build -t realitlscanner .
+```
+Run and research
+```bash
+# show help
+docker run --rm realitlscanner
+# scan
+docker run --rm realitlscanner -addr 1.1.1.1
+```
 ### Enable Geo IP
 
 To enable Geo IP information, place a MaxMind GeoLite2/GeoIP2 Country Database in the executing folder with the exact name `Country.mmdb`. You can download one from [here](https://github.com/Loyalsoldier/geoip/releases/latest/download/Country.mmdb).
