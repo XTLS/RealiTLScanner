@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+func GetTLSVersion(versionStr string) uint16 {
+	versionStr = strings.TrimSpace(versionStr)
+	switch versionStr {
+	case "1.0":
+		return tls.VersionTLS10
+	case "1.1":
+		return tls.VersionTLS11
+	case "1.2":
+		return tls.VersionTLS12
+	case "1.3":
+		return tls.VersionTLS13
+	default:
+		return 0 // no specific version targeted
+	}
+}
+
 func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	if host.IP == nil {
 		ip, err := LookupIP(host.Origin)
@@ -51,7 +67,15 @@ func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	log := slog.Info
 	feasible := true
 	geoCode := geo.GetGeo(host.IP)
-	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
+
+	targetVersion := GetTLSVersion(targetTLSVersion)
+	versionMatch := true
+	if targetVersion != 0 && targetVersion != state.Version {
+	    // If a target is set, but it doesn't match the negotiated version, set match to false
+		versionMatch = false
+	}
+
+	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 || !versionMatch {
 		// not feasible
 		log = slog.Debug
 		feasible = false

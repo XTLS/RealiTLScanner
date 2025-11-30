@@ -38,6 +38,7 @@ func main() {
 	flag.BoolVar(&enableIPv6, "46", false, "Enable IPv6 in additional to IPv4")
 	flag.StringVar(&url, "url", "", "Crawl the domain list from a URL, "+
 		"e.g. https://launchpad.net/ubuntu/+archivemirrors")
+	flag.StringVar(&targetTLSVersion, "tls", "", "Filter scan results to a specific TLS version, e.g., 1.2 or 1.3")
 	flag.Parse()
 	if verbose {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

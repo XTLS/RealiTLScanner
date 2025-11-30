@@ -28,6 +28,9 @@ It is recommended to run this tool locally, as running the scanner in the cloud 
 # Specify a port to scan, default: 443
 ./RealiTLScanner -addr 1.1.1.1 -port 443
 
+# Specify the only TLS version in the output
+./RealiTLScanner -addr 1.2.3.0/24 -tls 1.2
+
 # Show verbose output, including failed scans and infeasible targets:
 ./RealiTLScanner -addr 1.2.3.0/24 -v
 
