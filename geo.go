@@ -18,7 +18,7 @@ func NewGeo() *Geo {
 	}
 	reader, err := geoip2.Open("Country.mmdb")
 	if err != nil {
-		slog.Warn("Cannot open Country.mmdb")
+		slog.Warn("Cannot open Country.mmdb", "err", err)
 		return geo
 	}
 	slog.Info("Enabled GeoIP")
