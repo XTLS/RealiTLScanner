@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"log/slog"
 	"net"
 	"strconv"
@@ -50,7 +49,7 @@ func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	domain := state.PeerCertificates[0].Subject.CommonName
 	issuers := strings.Join(state.PeerCertificates[0].Issuer.Organization, " | ")
 	length := 0
-	var leaf *x509.Certificate
+	leaf := state.PeerCertificates[0]
 	for _, cert := range state.PeerCertificates {
 		length += len(cert.Raw)
 		if len(cert.DNSNames) != 0 {
