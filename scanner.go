@@ -1,13 +1,23 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"log/slog"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
+
+// dnsCache stores only successful resolutions.
+var dnsCache = make(map[string][]net.IP)
+var dnsCacheMu sync.RWMutex
+var dnsSF singleflight.Group
+
 
 func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	if host.IP == nil {
@@ -46,7 +56,13 @@ func ScanTLS(host Host, out chan<- string, geo *Geo) {
 	}
 	state := c.ConnectionState()
 	alpn := state.NegotiatedProtocol
-	domain := state.PeerCertificates[0].Subject.CommonName
+	domain := ""
+	if len(state.PeerCertificates[0].DNSNames) > 0 {
+		domain = state.PeerCertificates[0].DNSNames[0]
+	} else {
+		domain = state.PeerCertificates[0].Subject.CommonName
+	}
+
 	issuers := strings.Join(state.PeerCertificates[0].Issuer.Organization, " | ")
 	length := 0
 	leaf := state.PeerCertificates[0]
@@ -57,13 +73,64 @@ func ScanTLS(host Host, out chan<- string, geo *Geo) {
 		}
 	}
 
-	log := slog.Info
 	feasible := true
 	geoCode := geo.GetGeo(host.IP)
 	if state.Version != tls.VersionTLS13 || alpn != "h2" || len(domain) == 0 || len(issuers) == 0 {
 		// not feasible
-		log = slog.Debug
 		feasible = false
+	}
+
+	if feasible && resolveDomains {
+		lookupDomain := domain
+		if strings.HasPrefix(lookupDomain, "*.") {
+			lookupDomain = lookupDomain[2:]
+		}
+
+		dnsCacheMu.RLock()
+		resolvedIPs, cached := dnsCache[lookupDomain]
+		dnsCacheMu.RUnlock()
+
+		if !cached {
+			v, err, _ := dnsSF.Do(lookupDomain, func() (interface{}, error) {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+				defer cancel()
+				addrs, err := net.DefaultResolver.LookupIPAddr(ctx, lookupDomain)
+				if err != nil {
+					return ([]net.IP)(nil), err
+				}
+				ips := make([]net.IP, len(addrs))
+				for i, a := range addrs {
+					ips[i] = a.IP
+				}
+				dnsCacheMu.Lock()
+				dnsCache[lookupDomain] = ips
+				dnsCacheMu.Unlock()
+				return ips, nil
+			})
+			if err != nil {
+				slog.Debug("DNS resolution failed", "domain", lookupDomain, "err", err)
+				resolvedIPs = nil
+			} else {
+				resolvedIPs = v.([]net.IP)
+			}
+		}
+
+		ipMatched := false
+		for _, rip := range resolvedIPs {
+			if rip.Equal(host.IP) {
+				ipMatched = true
+				break
+			}
+		}
+		if !ipMatched {
+			slog.Debug("IP mismatch with cert domain DNS records", "ip", host.IP.String(), "domain", lookupDomain)
+			feasible = false
+		}
+	}
+
+	log := slog.Info
+	if !feasible {
+		log = slog.Debug
 	} else {
 		out <- strings.Join([]string{
 			host.IP.String(), 
